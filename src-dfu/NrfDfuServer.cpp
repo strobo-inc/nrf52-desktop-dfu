@@ -82,7 +82,7 @@ void NrfDfuServer::request_checksum() { this->write_procedure(std::string() + ch
 void NrfDfuServer::write_execute() { this->write_procedure(std::string() + char(EXECUTE_KEY)); }
 
 void NrfDfuServer::write_procedure(std::string opcode_parameters) {
-    // std::cout << "[WRITE_OPCODE] char-write-req: 0x000f  " << ToHex(opcode, true) << std::endl;
+    std::cout << "[WRITE_OPCODE] char-write-req: 0x000f  " << ToHex(opcode_parameters, true) << std::endl;
     this->write_request(NORDIC_SECURE_DFU_SERVICE, NORDIC_DFU_CONTROL_POINT_CHAR, opcode_parameters);
 }
 
@@ -100,18 +100,18 @@ void NrfDfuServer::notify(std::string service, std::string characteristic, std::
     if (service == NORDIC_SECURE_DFU_SERVICE && characteristic == NORDIC_DFU_CONTROL_POINT_CHAR) {
         if (data[0] == RESPONSE_CODE_KEY) {
             process_response_data(data);
-            // std::cout << "Event Received  " << this->received_event << std::endl;
+            std::cout << "Event Received  " << this->received_event << std::endl;
             std::lock_guard<std::mutex> guard(mutex_waiting_response);
             this->waiting_response = false;
             this->cv_waiting_response.notify_all();
-            // std::cout << "Notified" << std::endl;
+            std::cout << "Notified" << std::endl;
         } else {
             this->received_event = ERROR_NO_RESP_KEY;
-            // std::cout << "Received Data not starting with response key" << std::endl;
+            std::cout << "Received Data not starting with response key" << std::endl;
         }
     } else {
         this->received_event = ERROR_NOT_SUP_SERV_CHAR;
-        // std::cout << "Not Supported service or characteristic for notify " << std::endl;
+        std::cout << "Not Supported service or characteristic for notify " << std::endl;
     }
 }
 
@@ -120,12 +120,12 @@ state_t NrfDfuServer::get_state() { return this->state; }
 // * Methods to Handle FSM
 
 void NrfDfuServer::run() {
-    // std::cout << "Running FSM" << std::endl;
+    std::cout << "Running FSM" << std::endl;
     this->manage_state();
     std::unique_lock<std::mutex> lock(mutex_waiting_response);
     cv_waiting_response.wait(lock, [&] { return !this->waiting_response; });
     this->event_handler();  // Notify Received
-    // std::cout << "State update to " << this->state << std::endl;
+    std::cout << "State update to " << this->state << std::endl;
 }
 
 void NrfDfuServer::manage_state() {

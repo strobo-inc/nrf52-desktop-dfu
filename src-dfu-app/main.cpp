@@ -5,13 +5,15 @@
 #include "utils.h"
 
 #include <cerrno>
+#include <chrono>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
 
-#define SCAN_DURATION_MS 2500
+#define SCAN_DURATION_MS 60000
 
 static bool get_bin_dat_files(std::string&, std::string&, const char*);
 
@@ -64,23 +66,30 @@ int main(int argc, char* argv[]) {
 
     NativeBLE::NativeBleController ble;
     NativeBLE::CallbackHolder callback_holder;
-    NativeDFU::NrfDfuServer dfu_server([&](std::string service, std::string characteristic,
-                                           std::string data) { ble.write_command(service, characteristic, data); },
-                                       [&](std::string service, std::string characteristic, std::string data) {
-                                           ble.write_request(service, characteristic, data);
-                                       },
-                                       data_file, bin_file);
+    NativeDFU::NrfDfuServer dfu_server(
+        [&](std::string service, std::string characteristic, std::string data) {
+            std::cout << "write command:" << service << "," << characteristic << "," << data << std::endl;
+            ble.write_command(service, characteristic, data);
+        },
+        [&](std::string service, std::string characteristic, std::string data) {
+            std::cout << "write data:" << service << "," << characteristic << "," << data << std::endl;
+            ble.write_request(service, characteristic, data);
+        },
+        data_file, bin_file);
 
     callback_holder.callback_on_scan_found = [&](NativeBLE::DeviceDescriptor device) {
         if (is_mac_addr_match(device.address, device_dfu_ble_address)) {
             std::cout << "  Found: " << device.name << " (" << device.address << ")" << std::endl;
             device_found = true;
             device_dfu_ble_address = device.address;
+        } else {
+            std::cout << "  Found: " << device.name << " (" << device.address << ") (not target)" << std::endl;
         }
     };
 
     std::cout << "Starting Scan! " << std::endl;
     ble.setup(callback_holder);
+    std::this_thread::sleep_for(std::chrono::seconds(5));  // wait for bluetooth controller on.
     ble.scan_timeout(SCAN_DURATION_MS);
 
     if (!device_found) {
