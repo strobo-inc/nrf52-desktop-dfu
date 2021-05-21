@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
         }
     };
 
-    std::cout << "Starting Scan! " << std::endl;
+    std::cout << "Starting Scan for DFU target device! " << std::endl;
     ble.setup(callback_holder);
     std::this_thread::sleep_for(std::chrono::seconds(5));  // wait for bluetooth controller on.
     ble.scan_timeout(SCAN_DURATION_MS);

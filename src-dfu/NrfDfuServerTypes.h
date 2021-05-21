@@ -5,6 +5,7 @@
 #define NORDIC_SECURE_DFU_SERVICE "0000fe59-0000-1000-8000-00805f9b34fb"      // Service handle 0x000b
 #define NORDIC_DFU_CONTROL_POINT_CHAR "8ec90001-f315-4f60-9fb8-838830daea50"  // Handle 0x000F
 #define NORDIC_DFU_PACKET_CHAR "8ec90002-f315-4f60-9fb8-838830daea50"         // Handle 0x000D
+#define NORDIC_DFU_BUTTONLESS_CHAR "8ec90003-f315-4f60-9fb8-838830daea50"
 
 #define FLASH_PAGE_SIZE 4096
 // TODO: MTU Size will depend on platform (MacOs -.-)
@@ -16,6 +17,23 @@
 namespace NativeDFU {
 
 typedef std::function<void(std::string service, std::string characteristic, std::string data)> ble_write_t;
+
+typedef enum {
+    DFU_RSP_INVALID = 0x00,
+    DFU_RSP_SUCCESS = 0x01,
+    DFU_RSP_OP_CODE_NOT_SUPPORTED = 0x02,
+    DFU_RSP_OPERATION_FAILED = 0x04,
+    DFU_RSP_ADV_NAME_INVALID = 0x05,
+    DFU_RSP_BUSY = 0x06,
+    DFU_RSP_NOT_BONDED = 0x07
+} ble_dfu_buttonless_rsp_code_t;
+
+typedef enum {
+    DFU_OP_RESERVED = 0x00,
+    DFU_OP_ENTER_BOOTLOADER = 0x01,
+    DFU_OP_SET_ADV_NAME = 0x02,
+    DFU_OP_RESPONSE_CODE = 0x20
+} ble_dfu_buttonless_op_code_t;
 
 // * Opcodes, extended errors not implemented
 typedef enum {
