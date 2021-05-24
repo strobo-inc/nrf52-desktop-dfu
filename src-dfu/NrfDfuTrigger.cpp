@@ -1,4 +1,3 @@
-#pragma once
 #include "NrfDfuTrigger.h"
 #include <vector>
 #include <iostream>
@@ -65,10 +64,11 @@ bool NrfDfuTrigger::is_reply_pkt_ok(const std::string& resp, uint8_t expected_op
     return true;
 }
 NrfDfuTrigger::dfu_trig_state_t NrfDfuTrigger::op_init() {
-    std::vector<uint8_t> setadvname_pkt(1 + 1 + target_adv_name.length());
+    std::vector<uint8_t> setadvname_pkt(1 + 1 + target_adv_name.length()+1);
     setadvname_pkt[0] = DFU_OP_SET_ADV_NAME;
     setadvname_pkt[1] = target_adv_name.length();
     memcpy(&setadvname_pkt[2], target_adv_name.data(), target_adv_name.length());
+    setadvname_pkt[2+target_adv_name.length()]=0;//null terminate
     std::string pkt((char*)setadvname_pkt.data());
     write_request(NORDIC_SECURE_DFU_SERVICE, NORDIC_DFU_BUTTONLESS_CHAR, pkt);
     return ADVNAME_SENT;
@@ -78,9 +78,11 @@ NrfDfuTrigger::dfu_trig_state_t NrfDfuTrigger::op_advname_sent(const std::string
         return ERROR;
     }
     std::cout<<"dfu trigger advname set ok."<<std::endl;
-    uint8_t opcode = DFU_OP_ENTER_BOOTLOADER;
-    std::string pkt((char*)&opcode);
-    write_request(NORDIC_SECURE_DFU_SERVICE, NORDIC_DFU_BUTTONLESS_CHAR, pkt);
+    std::vector<uint8_t>pkt(2);
+    pkt[0]=DFU_OP_ENTER_BOOTLOADER;
+    pkt[1]=0;
+    std::string pkts((char*)pkt.data());
+    write_request(NORDIC_SECURE_DFU_SERVICE, NORDIC_DFU_BUTTONLESS_CHAR, pkts);
     return DFU_TRIGGERED;
 }
 NrfDfuTrigger::dfu_trig_state_t NrfDfuTrigger::op_dfu_triggered(const std::string& resp) {
@@ -98,7 +100,7 @@ bool NrfDfuTrigger::run(void) {
     state = update(state,"");
     std::unique_lock<std::mutex> lk(mtx);
     cv.wait(lk,[&]{
-        return (this->state==COMPLETED)||(this->ERROR);
+        return (this->state==COMPLETED)||(this->state==ERROR);
     });
     if(state==COMPLETED){
         return true;
