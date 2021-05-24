@@ -82,6 +82,7 @@ bool do_dfu_trigger(const std::string& device_name, const std::string& device_ad
         });
         std::this_thread::sleep_for(std::chrono::seconds(1));//wait for indication enable
         bool is_success = dfu_trigger.run();
+        std::this_thread::sleep_for(std::chrono::seconds(1));//wait for indication confirm
         ble.disconnect();
         ble.dispose();
         if (is_success) {
