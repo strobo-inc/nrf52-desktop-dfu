@@ -3,7 +3,7 @@ message("-- [INFO] Building DFU Library")
 file(GLOB_RECURSE SRC_DFU_FILES "src-dfu/*.cpp" "src-dfu/*.c")
 add_library(dfu SHARED ${SRC_DFU_FILES})
 add_library(dfu-static STATIC ${SRC_DFU_FILES})
-file(COPY "src-dfu/NrfDfuServer.h" "src-dfu/NrfDfuServerTypes.h" DESTINATION ${OUTPUT_DIR})
+file(COPY "src-dfu/NrfDfuServer.h" "src-dfu/NrfDfuServerTypes.h" "src-dfu/NrfDfuTrigger.h" DESTINATION ${OUTPUT_DIR})
 
 message("-- [INFO] Building DFU Library Test Application")
 # BLE Platform Dependant Library Configuration
