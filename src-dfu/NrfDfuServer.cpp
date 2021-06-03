@@ -239,7 +239,7 @@ void NrfDfuServer::manage_state() {
                     MTU_CHUNK));
                 mtu_chunks_transferred++;
             } else if (this->mtu_extra_bytes) {
-                this->write_packet(std::string(&this->binfile_data.c_str()[this->bin_bytes_written + MTU_CHUNK * i],
+                this->write_packet(std::string(&this->binfile_data.c_str()[this->bin_bytes_written + MTU_CHUNK * mtu_chunks_transferred],
                                                this->mtu_extra_bytes));
                 mtu_extra_bytes = 0;
             }
