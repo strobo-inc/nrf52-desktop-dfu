@@ -18,8 +18,7 @@
 #define SCAN_DURATION_TRIG_MS 10000
 #define DFU_TARGET_NAME "DfuTarg"
 
-
-static std::string ToHex(const std::string &s, bool upper_case) {  // Used for debugging
+static std::string ToHex(const std::string& s, bool upper_case) {  // Used for debugging
     std::ostringstream ret;
     for (std::string::size_type i = 0; i < s.length(); ++i) {
         int z = s[i] & 0xff;
@@ -36,11 +35,11 @@ bool do_dfu_trigger(const std::string& device_name, const std::string& device_ad
     NativeBLE::CallbackHolder callback_holder;
     NativeDFU::NrfDfuTrigger dfu_trigger(
         [&](std::string service, std::string characteristic, std::string data) {
-            std::cout << "write command:" << service << "," << characteristic << "," << ToHex(data,true) << std::endl;
+            std::cout << "write command:" << service << "," << characteristic << "," << ToHex(data, true) << std::endl;
             ble.write_command(service, characteristic, data);
         },
         [&](std::string service, std::string characteristic, std::string data) {
-            std::cout << "write data:" << service << "," << characteristic << "," << ToHex(data,true) << std::endl;
+            std::cout << "write data:" << service << "," << characteristic << "," << ToHex(data, true) << std::endl;
             ble.write_request(service, characteristic, data);
         },
         device_name);
@@ -80,9 +79,9 @@ bool do_dfu_trigger(const std::string& device_name, const std::string& device_ad
             dfu_trigger.indicate(NORDIC_SECURE_DFU_SERVICE, NORDIC_DFU_BUTTONLESS_CHAR,
                                  std::string(reinterpret_cast<const char*>(data), length));
         });
-        std::this_thread::sleep_for(std::chrono::seconds(1));//wait for indication enable
+        std::this_thread::sleep_for(std::chrono::seconds(1));  // wait for indication enable
         bool is_success = dfu_trigger.run();
-        std::this_thread::sleep_for(std::chrono::seconds(1));//wait for indication confirm
+        std::this_thread::sleep_for(std::chrono::seconds(1));  // wait for indication confirm
         ble.disconnect();
         ble.dispose();
         if (is_success) {
@@ -120,6 +119,10 @@ bool do_dfu(const std::string& device_name, const std::string& data_file, const 
         }
     };
 
+    callback_holder.callback_on_device_disconnected=[](std::string s){
+        std::cout<<s<<", disconnected"<<std::endl;
+    };
+
     std::cout << "Starting Scan for DFU target device! " << std::endl;
     ble.setup(callback_holder);
     std::this_thread::sleep_for(std::chrono::seconds(5));  // wait for bluetooth controller on.
@@ -146,8 +149,9 @@ bool do_dfu(const std::string& device_name, const std::string& data_file, const 
             dfu_server.notify(NORDIC_SECURE_DFU_SERVICE, NORDIC_DFU_CONTROL_POINT_CHAR,
                               std::string(reinterpret_cast<const char*>(data), length));
         });
-
+        std::this_thread::sleep_for(std::chrono::seconds(1));//wait for enable notification.
         dfu_server.run_dfu();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         ble.disconnect();
         ble.dispose();
 
@@ -174,13 +178,17 @@ bool do_dfu(const std::string& device_name, const std::string& data_file, const 
  *
  */
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        std::cout << "Usage: " << argv[0] << " <ble_address> <dfu_zip_path>" << std::endl;
+    if ((argc != 3) && (argc != 4)) {
+        std::cout << "Usage: " << argv[0] << " <ble_address> <dfu_zip_path> " << std::endl;
         return -1;
     }
 
     std::string device_dfu_ble_address(argv[1]);
     char* dfu_zip_filepath = argv[2];
+    std::string dfu_only = "";
+    if (argc == 4) {
+        dfu_only = std::string(argv[3]);
+    }
 
     std::cout << "Starting DFU Test!" << std::endl;
     std::cout << "Initiating scan for " << SCAN_DURATION_MS << " milliseconds..." << std::endl;
@@ -205,10 +213,14 @@ int main(int argc, char* argv[]) {
         std::cout << "Invalid MAC address supplied. Address must be at least 4 characters." << std::endl;
         return -1;
     }
-    bool is_success = do_dfu_trigger(DFU_TARGET_NAME, device_dfu_ble_address);
-    if (!is_success) {
-        std::cout << "Trigger failed" << std::endl;
-        return -1;
+
+    bool is_success;
+    if (dfu_only != "dfuonly") {
+        is_success = do_dfu_trigger(DFU_TARGET_NAME, device_dfu_ble_address);
+        if (!is_success) {
+            std::cout << "Trigger failed" << std::endl;
+            return -1;
+        }
     }
     is_success = do_dfu(DFU_TARGET_NAME, data_file, bin_file);
     if (!is_success) {
@@ -236,6 +248,7 @@ bool get_bin_dat_files(std::string& bin, std::string& dat, const char* dfu_zip_p
     manifest_file = (char*)mz_zip_reader_extract_file_to_heap(zip_archive, "manifest.json", (size_t*)NULL,
                                                               (mz_uint)NULL);
     if (!manifest_file) {
+        std::cerr<<"manifest.json couldn't be read."<<std::endl;
         return false;
     }
 
@@ -249,6 +262,7 @@ bool get_bin_dat_files(std::string& bin, std::string& dat, const char* dfu_zip_p
     bin_contents = (char*)mz_zip_reader_extract_file_to_heap(zip_archive, bin_filename.c_str(), &bin_size,
                                                              (mz_uint)NULL);
     if (!dat_contents || !bin_contents) {
+        std::cerr<<"dat file or bin file couldn't be read."<<std::endl;
         return false;
     }
 

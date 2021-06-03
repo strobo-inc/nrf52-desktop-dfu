@@ -1,6 +1,7 @@
 #include "NrfDfuTrigger.h"
 #include <vector>
 #include <iostream>
+#include <string.h>
 
 using namespace NativeDFU;
 

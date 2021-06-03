@@ -222,12 +222,15 @@ class NrfDfuServer {
     const std::string &datafile_data;
     const std::string &binfile_data;
 
+
     // * Bin file sending variables
     uint32_t bin_bytes_written;   // Total bin_bytes_written
     uint32_t bin_bytes_to_write;  // Bytes to write on mtu cycle
     uint32_t mtu_extra_bytes;
     uint32_t mtu_chunks_remaing;
+    uint32_t mtu_chunks_transferred;
     bool mtu_last_chunk;
+    bool mtu_chunk_write_completed;
 
     // * CRC Result is calculated and stored here before sending data
     uint32_t crc32_result;
